@@ -18,7 +18,7 @@ class App extends React.Component {
 
   getSession = () => {
     fetch("/api/whoami/", {
-      credentials: "include",
+      credentials: "same-origin",
     })
     .then((res) => res.json())
     .then((data) => {
@@ -47,7 +47,7 @@ class App extends React.Component {
     fetch("/api/login/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
+      credentials: "same-origin",
       body: JSON.stringify({username: this.state.username, password: this.state.password}),
     })
     .then((res) => res.json())
@@ -62,7 +62,7 @@ class App extends React.Component {
 
   logout = () => {
     fetch("/api/logout", {
-      credentials: "include",
+      credentials: "same-origin",
     })
     .then((res) => res.json())
     .then((data) => {
