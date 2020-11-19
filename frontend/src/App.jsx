@@ -6,6 +6,7 @@ class App extends React.Component {
     super(props);
 
     this.state = {
+      csrf: '',
       username: '',
       password: '',
       isAuthenticated: false,
@@ -13,7 +14,21 @@ class App extends React.Component {
   }
 
   componentDidMount = () => {
-    this.getSession()
+    this.getSession();
+  }
+
+  getCSRF = () => {
+    fetch("/api/csrf/", {
+      credentials: "same-origin",
+    })
+    .then((res) => res.json())
+    .then((data) => {
+      console.log(data);
+      this.setState({csrf: data.csrf});
+    })
+    .catch((err) => {
+      console.log(err);
+    });
   }
 
   getSession = () => {
@@ -27,6 +42,7 @@ class App extends React.Component {
         this.setState({isAuthenticated: true});
       } else {
         this.setState({isAuthenticated: false});
+        this.getCSRF();
       }
     })
     .catch((err) => {
@@ -46,7 +62,10 @@ class App extends React.Component {
     event.preventDefault();
     fetch("/api/login/", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": this.state.csrf,
+      },
       credentials: "same-origin",
       body: JSON.stringify({username: this.state.username, password: this.state.password}),
     })
@@ -68,6 +87,7 @@ class App extends React.Component {
     .then((data) => {
       console.log(data);
       this.setState({isAuthenticated: false});
+      this.getCSRF();
     })
     .catch((err) => {
       console.log(err);
