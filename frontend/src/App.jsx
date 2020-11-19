@@ -6,9 +6,10 @@ class App extends React.Component {
     super(props);
 
     this.state = {
-      csrf: '',
-      username: '',
-      password: '',
+      csrf: "",
+      username: "",
+      password: "",
+      error: "",
       isAuthenticated: false,
     };
   }
@@ -58,6 +59,14 @@ class App extends React.Component {
     this.setState({username: event.target.value});
   }
 
+  isResponseOk(response) {
+    if (response.status >= 200 && response.status <= 299) {
+      return response.json();
+    } else {
+      throw Error(response.statusText);
+    }
+  }
+
   login = (event) => {
     event.preventDefault();
     fetch("/api/login/", {
@@ -69,13 +78,14 @@ class App extends React.Component {
       credentials: "same-origin",
       body: JSON.stringify({username: this.state.username, password: this.state.password}),
     })
-    .then((res) => res.json())
+    .then(this.isResponseOk)
     .then((data) => {
       console.log(data);
-      this.setState({isAuthenticated: true});
+      this.setState({isAuthenticated: true, username: "", password: "", error: ""});
     })
     .catch((err) => {
       console.log(err);
+      this.setState({error: "Wrong username or password."});
     });
   }
 
@@ -83,7 +93,7 @@ class App extends React.Component {
     fetch("/api/logout", {
       credentials: "same-origin",
     })
-    .then((res) => res.json())
+    .then(this.isResponseOk)
     .then((data) => {
       console.log(data);
       this.setState({isAuthenticated: false});
@@ -109,6 +119,13 @@ class App extends React.Component {
             <div className="form-group">
               <label htmlFor="username">Password</label>
               <input type="password" className="form-control" id="password" name="password" value={this.state.password} onChange={this.handlePasswordChange} />
+              <div>
+                {this.state.error &&
+                  <small className="text-danger">
+                    {this.state.error}
+                  </small>
+                }
+              </div>
             </div>
             <button type="submit" className="btn btn-primary">Login</button>
           </form>
