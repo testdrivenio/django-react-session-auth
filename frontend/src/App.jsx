@@ -6,14 +6,30 @@ class App extends React.Component {
     super(props);
 
     this.state = {
-      username: '',
-      password: '',
+      csrf: "",
+      username: "",
+      password: "",
+      error: "",
       isAuthenticated: false,
     };
   }
 
   componentDidMount = () => {
-    this.getSession()
+    this.getSession();
+  }
+
+  getCSRF = () => {
+    fetch("/api/csrf/", {
+      credentials: "same-origin",
+    })
+    .then((res) => res.json())
+    .then((data) => {
+      console.log(data);
+      this.setState({csrf: data.csrf});
+    })
+    .catch((err) => {
+      console.log(err);
+    });
   }
 
   getSession = () => {
@@ -27,6 +43,7 @@ class App extends React.Component {
         this.setState({isAuthenticated: true});
       } else {
         this.setState({isAuthenticated: false});
+        this.getCSRF();
       }
     })
     .catch((err) => {
@@ -42,21 +59,33 @@ class App extends React.Component {
     this.setState({username: event.target.value});
   }
 
+  isResponseOk(response) {
+    if (response.status >= 200 && response.status <= 299) {
+      return response.json();
+    } else {
+      throw Error(response.statusText);
+    }
+  }
+
   login = (event) => {
     event.preventDefault();
     fetch("/api/login/", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": this.state.csrf,
+      },
       credentials: "same-origin",
       body: JSON.stringify({username: this.state.username, password: this.state.password}),
     })
-    .then((res) => res.json())
+    .then(this.isResponseOk)
     .then((data) => {
       console.log(data);
-      this.setState({isAuthenticated: true});
+      this.setState({isAuthenticated: true, username: "", password: "", error: ""});
     })
     .catch((err) => {
       console.log(err);
+      this.setState({error: "Wrong username or password."});
     });
   }
 
@@ -64,10 +93,11 @@ class App extends React.Component {
     fetch("/api/logout", {
       credentials: "same-origin",
     })
-    .then((res) => res.json())
+    .then(this.isResponseOk)
     .then((data) => {
       console.log(data);
       this.setState({isAuthenticated: false});
+      this.getCSRF();
     })
     .catch((err) => {
       console.log(err);
@@ -89,6 +119,13 @@ class App extends React.Component {
             <div className="form-group">
               <label htmlFor="username">Password</label>
               <input type="password" className="form-control" id="password" name="password" value={this.state.password} onChange={this.handlePasswordChange} />
+              <div>
+                {this.state.error &&
+                  <small className="text-danger">
+                    {this.state.error}
+                  </small>
+                }
+              </div>
             </div>
             <button type="submit" className="btn btn-primary">Login</button>
           </form>
